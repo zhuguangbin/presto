@@ -14,6 +14,8 @@
 package com.facebook.presto.hive.metastore.thrift;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.metastore.api.ColumnStatistics;
 import org.apache.hadoop.hive.metastore.api.ColumnStatisticsDesc;
 import org.apache.hadoop.hive.metastore.api.ColumnStatisticsObj;
@@ -41,9 +43,14 @@ import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TTransport;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 
@@ -82,7 +89,10 @@ public class ThriftHiveMetastoreClient
     public Database getDatabase(String dbName)
             throws TException
     {
-        return client.get_database(dbName);
+        Database dataBase = client.get_database(dbName);
+        Database adapted = dataBase;
+        adapted.setLocationUri(adapt2ViewFsPath(dataBase.getLocationUri()));
+        return adapted;
     }
 
     @Override
@@ -145,7 +155,15 @@ public class ThriftHiveMetastoreClient
     public Table getTable(String databaseName, String tableName)
             throws TException
     {
-        return client.get_table(databaseName, tableName);
+        Table table = client.get_table(databaseName, tableName);
+        // only adapt to viewfs path for MANAGED_TABLE and EXTERNAL_TABLE, VIRTUAL_VIEW or INDEX_TABLE has no location
+        if (table.getTableType().equals(TableType.MANAGED_TABLE.name()) || table.getTableType().equals(TableType.EXTERNAL_TABLE.name())) {
+            Table adapted = table;
+            adapted.getSd().setLocation(adapt2ViewFsPath(table.getSd().getLocation()));
+            return adapted;
+        } else {
+            return table;
+        }
     }
 
     @Override
@@ -243,14 +261,22 @@ public class ThriftHiveMetastoreClient
     public Partition getPartition(String databaseName, String tableName, List<String> partitionValues)
             throws TException
     {
-        return client.get_partition(databaseName, tableName, partitionValues);
+        Partition partition = client.get_partition(databaseName, tableName, partitionValues);
+        Partition adapted = partition;
+        adapted.getSd().setLocation(adapt2ViewFsPath(partition.getSd().getLocation()));
+        return adapted;
     }
 
     @Override
     public List<Partition> getPartitionsByNames(String databaseName, String tableName, List<String> partitionNames)
             throws TException
     {
-        return client.get_partitions_by_names(databaseName, tableName, partitionNames);
+        List<Partition> partitions = client.get_partitions_by_names(databaseName, tableName, partitionNames);
+        return partitions.stream().map(p -> {
+            Partition adapted = p;
+            adapted.getSd().setLocation(adapt2ViewFsPath(p.getSd().getLocation()));
+            return adapted;
+        }).collect(Collectors.toList());
     }
 
     @Override
@@ -392,5 +418,32 @@ public class ThriftHiveMetastoreClient
             throws TException
     {
         client.set_ugi(userName, new ArrayList<>());
+    }
+
+
+    private String adapt2ViewFsPath(String origin) {
+        URI path = new Path(origin).toUri();
+        String scheme = path.getScheme();
+        String host = path.getHost();
+        int port = path.getPort();
+        String fsPrefix = scheme + "://" + host + (port == -1 ? "" : ":" + port);
+
+        Pattern pattern = Pattern.compile("namenode([\\w]*)\\.([\\w|\\.]+)\\.qihoo\\.net");
+        Matcher matcher = pattern.matcher(host);
+        try {
+            // match old fs pattern
+            // hdfs://namenode.safe.lycc.qihoo.net:9000
+            // hdfs://namenodefd1v.qss.zzzc.qihoo.net:9000
+            // hdfs://namenode.dfs.shbt.qihoo.net:9000
+            if ("hdfs".equals(scheme) && matcher.matches() && port == 9000) {
+                String idc = matcher.group(2);
+                String viewfsName = idc.replaceAll("\\.", "-");
+                return new URI("viewfs", viewfsName, path.getPath(), path.getFragment()).normalize().toString();
+            } else {
+                return origin;
+            }
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException("cannot adapt to viewfs for path : " + origin);
+        }
     }
 }
