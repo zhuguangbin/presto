@@ -1,8 +1,8 @@
-test:
-  tags:
-  - maven
-  script:
-  - mvn clean test
+#test:
+#  tags:
+#  - maven
+#  script:
+#  - mvn clean test
 
 deploy:
   stage: deploy
