@@ -68,10 +68,13 @@ public final class AuthenticationModules
 
     public static Module noHdfsAuthenticationModule()
     {
-        return binder -> binder
-                .bind(HdfsAuthentication.class)
-                .to(NoHdfsAuthentication.class)
-                .in(SINGLETON);
+        return binder -> {
+            binder.bind(Key.get(HadoopAuthentication.class, ForHdfs.class))
+                    .to(SimpleHadoopAuthentication.class);
+            binder.bind(HdfsAuthentication.class)
+                    .to(RemoteUserHdfsAuthentication.class)
+                    .in(SINGLETON);
+        };
     }
 
     public static Module simpleImpersonatingHdfsAuthenticationModule()
