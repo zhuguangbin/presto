@@ -161,7 +161,8 @@ public class ThriftHiveMetastoreClient
             Table adapted = table;
             adapted.getSd().setLocation(adapt2ViewFsPath(table.getSd().getLocation()));
             return adapted;
-        } else {
+        }
+        else {
             return table;
         }
     }
@@ -420,8 +421,8 @@ public class ThriftHiveMetastoreClient
         client.set_ugi(userName, new ArrayList<>());
     }
 
-
-    private String adapt2ViewFsPath(String origin) {
+    private String adapt2ViewFsPath(String origin)
+    {
         URI path = new Path(origin).toUri();
         String scheme = path.getScheme();
         String host = path.getHost();
@@ -439,10 +440,12 @@ public class ThriftHiveMetastoreClient
                 String idc = matcher.group(2);
                 String viewfsName = idc.replaceAll("\\.", "-");
                 return new URI("viewfs", viewfsName, path.getPath(), path.getFragment()).normalize().toString();
-            } else {
+            }
+            else {
                 return origin;
             }
-        } catch (URISyntaxException e) {
+        }
+        catch (URISyntaxException e) {
             throw new IllegalArgumentException("cannot adapt to viewfs for path : " + origin);
         }
     }

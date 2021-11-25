@@ -38,5 +38,4 @@ public class RemoteUserHdfsAuthentication
     {
         return executeActionInDoAs(UserGroupInformation.createRemoteUser(user), action);
     }
-
 }
