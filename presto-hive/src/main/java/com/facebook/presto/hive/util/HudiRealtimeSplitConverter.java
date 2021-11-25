@@ -15,10 +15,12 @@ package com.facebook.presto.hive.util;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.mapred.FileSplit;
+import org.apache.hudi.common.util.Option;
 import org.apache.hudi.hadoop.realtime.HoodieRealtimeFileSplit;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -59,12 +61,13 @@ public class HudiRealtimeSplitConverter
         String customSplitClass = customSplitInfo.get(CUSTOM_SPLIT_CLASS_KEY);
         if (HoodieRealtimeFileSplit.class.getName().equals(customSplitClass)) {
             requireNonNull(customSplitInfo.get(HUDI_DELTA_FILEPATHS_KEY), "HUDI_DELTA_FILEPATHS_KEY is missing");
-            List<String> deltaLogPaths = Arrays.asList(customSplitInfo.get(HUDI_DELTA_FILEPATHS_KEY).split(","));
+            List<String> deltaLogPaths = customSplitInfo.get(HUDI_DELTA_FILEPATHS_KEY).isEmpty() ? Collections.emptyList() : Arrays.asList(customSplitInfo.get(HUDI_DELTA_FILEPATHS_KEY).split(","));
             return Optional.of(new HoodieRealtimeFileSplit(
                 split,
                 requireNonNull(customSplitInfo.get(HUDI_BASEPATH_KEY), "HUDI_BASEPATH_KEY is missing"),
                 deltaLogPaths,
-                requireNonNull(customSplitInfo.get(HUDI_MAX_COMMIT_TIME_KEY), "HUDI_MAX_COMMIT_TIME_KEY is missing")));
+                requireNonNull(customSplitInfo.get(HUDI_MAX_COMMIT_TIME_KEY), "HUDI_MAX_COMMIT_TIME_KEY is missing"),
+                Option.empty()));
         }
         return Optional.empty();
     }

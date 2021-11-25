@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.facebook.presto</groupId>
         <artifactId>presto-root</artifactId>
-        <version>0.240</version>
+        <version>0.240-qihoo-SNAPSHOT</version>
     </parent>
 
     <artifactId>presto-hive-hadoop2</artifactId>
@@ -155,6 +155,10 @@
                                 <ignoredResourcePattern>parquet.thrift</ignoredResourcePattern>
                                 <ignoredResourcePattern>about.html</ignoredResourcePattern>
                             </ignoredResourcePatterns>
+                            <ignoredClassPatterns>
+                                <ignoredClassPattern>org.apache.htrace.*</ignoredClassPattern>
+                                <ignoredClassPattern>module-info</ignoredClassPattern>
+                            </ignoredClassPatterns>
                         </configuration>
                     </plugin>
                 </plugins>

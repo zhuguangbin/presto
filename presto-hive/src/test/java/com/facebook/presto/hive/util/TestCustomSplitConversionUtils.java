@@ -15,6 +15,7 @@ package com.facebook.presto.hive.util;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.FileSplit;
+import org.apache.hudi.common.util.Option;
 import org.apache.hudi.hadoop.realtime.HoodieRealtimeFileSplit;
 import org.testng.annotations.Test;
 
@@ -39,7 +40,7 @@ public class TestCustomSplitConversionUtils
         String expectedMaxCommitTime = "max_commit_time";
 
         FileSplit baseSplit = new FileSplit(expectedPath, expectedStart, expectedLength, expectedLocations);
-        FileSplit hudiSplit = new HoodieRealtimeFileSplit(baseSplit, expectedBasepath, expectedDeltaLogPaths, expectedMaxCommitTime);
+        FileSplit hudiSplit = new HoodieRealtimeFileSplit(baseSplit, expectedBasepath, expectedDeltaLogPaths, expectedMaxCommitTime, Option.empty());
 
         // Test conversion of HudiSplit -> customSplitInfo
         Map<String, String> customSplitInfo = CustomSplitConversionUtils.extractCustomSplitInfo(hudiSplit);
