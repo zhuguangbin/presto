@@ -9,6 +9,6 @@ deploy:
   tags:
   - maven
   only:
-  - 0.240-qihoo@big-data/presto
+  - 0.240-qihoo.1@big-data/presto
   script:
   - mvn clean deploy -DskipTests
